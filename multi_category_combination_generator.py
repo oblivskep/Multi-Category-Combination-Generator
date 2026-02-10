@@ -156,7 +156,7 @@ def main():
     Main function to orchestrate the combination generation
     """
     print("=" * 60)
-    print("Cluster Combinations Generator")
+    print("Multi-Category Combination Generator")
     print("=" * 60)
     
     # Get input file from user

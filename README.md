@@ -1,147 +1,200 @@
-# Cluster Combinations Generator
+# Multi-Category Combination Generator
 
-A Python script that generates all possible combinations of elements from three clusters (C1, C2, C3) and exports them to CSV and XLSX formats.
+A structured tool for generating all possible combinations across multiple input categories (e.g., product variants, configuration matrices, SKU expansions).
+
+This Python engine generates a complete cross-product (C1 × C2 × C3) from categorized CSV inputs and exports results to CSV and Excel formats.
+
+---
 
 ## Overview
 
-This script solves the combinatorics problem of creating combinations where:
-- **One element is selected from Cluster C1**
-- **One element is selected from Cluster C2**
-- **One element is selected from Cluster C3**
+This project generates all possible structured combinations across three defined categories.
 
-The result is all possible combinations without repetition: C1 × C2 × C3
+For each output row:
 
-### Example
-If you have:
-- C1: [BA, BB]
-- C2: [LJ, LK]
-- C3: [TA, TB]
+- One element is selected from Category C1  
+- One element is selected from Category C2  
+- One element is selected from Category C3  
 
-The script generates: BA-LJ-TA, BA-LJ-TB, BA-LK-TA, BA-LK-TB, BB-LJ-TA, BB-LJ-TB, BB-LK-TA, BB-LK-TB
-(Total: 2 × 2 × 2 = 8 combinations)
+The result is a complete structured cross-product:
+
+Total Combinations = |C1| × |C2| × |C3|
+
+Manual configuration of multi-category data often leads to missing combinations, inconsistent structures, and downstream workflow errors. This generator ensures complete coverage, structured output, and scalable expansion.
+
+---
+
+## Visual Schema
+
+Input Categories:
+
+    C1:  A1   A2   A3
+    C2:  B1   B2
+    C3:  C1   C2   C3
+
+Cross-Product Generation:
+
+             ┌───────────────┐
+             │   C1 Elements │
+             └───────────────┘
+                      │
+                      ▼
+             ┌───────────────┐
+             │   C2 Elements │
+             └───────────────┘
+                      │
+                      ▼
+             ┌───────────────┐
+             │   C3 Elements │
+             └───────────────┘
+                      │
+                      ▼
+        ┌─────────────────────────────┐
+        │     Generated Output Rows   │
+        │  A1-B1-C1                   │
+        │  A1-B1-C2                   │
+        │  A1-B2-C1                   │
+        │  ...                        │
+        └─────────────────────────────┘
+
+---
+
+## Example
+
+If the input contains:
+
+- C1: [A, B]  
+- C2: [X, Y]  
+- C3: [1, 2]  
+
+The generator produces:
+
+A-X-1  
+A-X-2  
+A-Y-1  
+A-Y-2  
+B-X-1  
+B-X-2  
+B-Y-1  
+B-Y-2  
+
+Total combinations: 2 × 2 × 2 = 8
+
+---
 
 ## Input File Format
 
-Your CSV file must have the following structure:
+The input must be a CSV file structured as follows:
 
-```
-C1 (cluster 1), C2 (cluster 2), C2, C2, C3 (cluster 3), C3, C3
-Class 1,       Class 2,        Class 3, Class 4, Class 5, Class 6, Class 7
-BA,           SP,            LJ, VB,     TA,    TD,    TG
-BB,           SQ,            LK, VC,     TB,    TE,
-BC,                          LL, VE,     TC,    TF,
-BD,                          LM, VF,
-BE,                          LN,
-              LO,
-```
+C1 (optional description), C2 (optional description), C2, C3, C3  
+Class 1, Class 2, Class 3, Class 4, Class 5  
+A1, B1, B2, C1, C2  
+A2, B3, B4, C3,  
 
-### CSV Structure Requirements:
-1. **Row 1**: Cluster labels (C1, C2, C3) - can have optional descriptions like "C1 (cluster 1)"
-2. **Row 2**: Class names (Class 1, Class 2, etc.)
-3. **Rows 3+**: Elements for each class (one element per cell, empty cells are ignored)
-4. Elements can span multiple columns within the same cluster
+### Structure Rules
 
-## Installation
+1. Row 1 → Category labels (C1, C2, C3 — descriptions allowed)
+2. Row 2 → Optional class metadata
+3. Row 3+ → Elements (one element per cell)
+4. Empty cells are ignored automatically
+5. A category may span multiple columns
+6. All columns belonging to the same category are grouped before generating combinations
 
-1. Ensure Python 3.x is installed
-2. Install required packages:
+For a visual example of how this spreadsheet should look when opened in Excel or LibreOffice, see:
 
-```bash
-pip install xlsxwriter
-```
+**example_input.png**
 
-Or the script includes fallback for CSV-only output if packages are missing.
+---
 
-## Usage
+## What the Script Does
 
-### Running the Script
-
-```bash
-python combinations_generator.py
-```
-
-The script will prompt you to enter the path to your CSV file:
-
-```
-============================================================
-Cluster Combinations Generator
-============================================================
-
-Enter the path to your CSV file: data.csv
-```
-
-### What the Script Does
-
-1. **Reads and Parses** the input CSV file
-2. **Identifies Clusters** (C1, C2, C3) and their classes
-3. **Extracts Elements** from each class
-4. **Generates All Combinations** from C1 × C2 × C3
-5. **Saves Results** to:
+1. Reads and parses structured CSV input  
+2. Identifies category groupings (C1, C2, C3)  
+3. Extracts valid elements from each category  
+4. Generates full cross-product combinations  
+5. Exports results to:
    - `{filename}_combinations.csv`
    - `{filename}_combinations.xlsx`
 
-### Output
+---
 
-Both output files contain the same data with columns:
-- **C1_Element**: Element from Cluster 1
-- **C2_Element**: Element from Cluster 2
-- **C3_Element**: Element from Cluster 3
-- **Combination**: Formatted as `C1_Element-C2_Element-C3_Element`
+## Output Structure
 
-#### Example Output:
-```
-C1_Element,C2_Element,C3_Element,Combination
-BA,LJ,TD,BA-LJ-TD
-BA,LJ,TE,BA-LJ-TE
-BA,LJ,TF,BA-LJ-TF
-BA,LJ-TG,BA-LJ-TG
-...
-```
+Each output file contains:
 
-## Example Calculation
+- C1_Element  
+- C2_Element  
+- C3_Element  
+- Combination (formatted as C1-C2-C3)
 
-Using the provided `data.csv`:
-- **C1 (Class 1)**: 5 elements [BA, BB, BC, BD, BE]
-- **C2 (Classes 2, 3, 4)**: 12 elements [SP, SQ, LJ, LK, LL, LM, LN, LO, VB, VC, VE, VF]
-- **C3 (Classes 5, 6, 7)**: 7 elements [TA, TB, TC, TD, TE, TF, TG]
+Example:
 
-**Total Combinations**: 5 × 12 × 7 = **420 combinations**
+C1_Element,C2_Element,C3_Element,Combination  
+A,X,1,A-X-1  
+A,X,2,A-X-2  
 
-(The data shows 200 combinations because some clusters have fewer elements in the actual data)
+---
 
-## File Output
+## Use Cases
 
-- **CSV Format** (.csv): Universal spreadsheet format, editable in any text editor or Excel
-- **XLSX Format** (.xlsx): Microsoft Excel format with formatting and optimized column widths
+This engine supports:
 
-## Cluster Naming
+- Product variant generation (size × color × model)  
+- SKU combination expansion  
+- Configuration matrices  
+- Inventory combinations  
+- Test case permutation generation  
+- Bundle generation systems  
+- Structured dataset expansion  
+- Manufacturing option modeling  
 
-The script is flexible with cluster naming and handles:
-- Simple format: `C1`, `C2`, `C3`
-- Descriptive format: `C1 (cluster 1)`, `C2 (cluster 2)`, `C3 (cluster 3)`
-- Mixed formats within the same file
+---
 
-## Error Handling
+## Installation
 
-- Validates that all three clusters (C1, C2, C3) are present
-- Gracefully handles missing or empty cells
-- Provides informative error messages if the input format is incorrect
+Requires Python 3.6+
 
-## Notes
+Install dependency:
 
-- Empty cells in the input CSV are automatically ignored
-- The script combines elements from ALL classes within each cluster
-- Output is generated in the same directory as the input file
-- Existing output files with the same name will be overwritten
+    pip install xlsxwriter
+
+Or:
+
+    pip install -r requirements.txt
+
+---
+
+## Running the Script
+
+    python multi_category_combination_generator.py
+
+You will be prompted to enter the path to your CSV file.
+
+---
+
+## Features
+
+- Flexible category naming  
+- Multi-column category support  
+- Automatic empty-cell filtering  
+- Structured CSV and Excel export  
+- Input validation and error handling  
+
+---
 
 ## Requirements
 
 - Python 3.6+
-- xlsxwriter (for XLSX output; CSV output works without it)
+- xlsxwriter (for XLSX export)
 
-## Support
+---
 
-If you encounter issues:
-1. Verify your CSV file follows the required format
-2. Ensure all three clusters (C1, C2, C3) are present in your file
-3. Check that the file is saved as `.csv` format
+## License
+
+MIT License
+
+---
+
+## Author
+
+Developed as part of an automation and structured data workflow portfolio.
