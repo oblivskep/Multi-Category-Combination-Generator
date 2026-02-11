@@ -86,15 +86,26 @@ Total combinations: 2 × 2 × 2 = 8
 
 The input must be a CSV file structured as follows:
 
+Legacy C1/C2/C3 style:
+
 C1 (optional description), C2 (optional description), C2, C3, C3  
 Class 1, Class 2, Class 3, Class 4, Class 5  
 A1, B1, B2, C1, C2  
 A2, B3, B4, C3,  
 
+Human-friendly headers style (example):
+
+Product Type, Color, Color, Size  
+Class 1, Class 2, Class 3, Class 4  
+A, Red, Blue, Small  
+B, Green, , Large  
+
 ### Structure Rules
 
-1. Row 1 → Category labels (C1, C2, C3 — descriptions allowed)
-2. Row 2 → Optional class metadata
+1. Row 1 → Category labels
+   - Either C1/C2/C3 style (descriptions allowed), or
+   - Human-friendly names like "Category 1", "Product Type", "Color", "Size"
+2. Row 2 → Required class names (blank cells fall back to auto-naming)
 3. Row 3+ → Elements (one element per cell)
 4. Empty cells are ignored automatically
 5. A category may span multiple columns
@@ -138,6 +149,14 @@ A,X,1,A-X-1
 A,X,2,A-X-2  
 
 ---
+
+## Self-Test
+
+Run the built-in smoke checks:
+
+```bash
+python3 multi_category_combination_generator.py --self-test
+```
 
 ## Use Cases
 
@@ -200,4 +219,3 @@ MIT License
 ## Author
 
 Developed as part of an automation and structured data workflow portfolio.
-

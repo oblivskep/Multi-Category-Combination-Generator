@@ -1,7 +1,56 @@
 import csv
 import os
-from itertools import product
+import sys
+import tempfile
 from pathlib import Path
+
+
+def _detect_category_mapping(headers):
+    """
+    Detect category mapping from row-1 headers.
+    Returns (col_to_category, legacy_mode).
+    """
+    normalized_headers = [(h or "").strip() for h in headers]
+    legacy = any(
+        h and h.split()[0].upper() in {"C1", "C2", "C3"}
+        for h in normalized_headers
+    )
+
+    col_to_category = [None] * len(headers)
+
+    if legacy:
+        for idx, header in enumerate(normalized_headers):
+            if not header:
+                continue
+            token = header.split()[0].upper()
+            if token in {"C1", "C2", "C3"}:
+                col_to_category[idx] = token
+        return col_to_category, True
+
+    # Human-friendly headers: group adjacent columns with the same header
+    groups = []
+    current_group = None
+    for idx, header in enumerate(normalized_headers):
+        if not header:
+            continue
+        if current_group is None or header != current_group:
+            groups.append(header)
+            current_group = header
+        group_idx = len(groups) - 1
+        if group_idx >= 3:
+            raise ValueError(
+                f"Expected exactly 3 categories from row 1, found {len(groups)}. "
+                f"Headers seen (left-to-right): {groups}"
+            )
+        col_to_category[idx] = f"C{group_idx + 1}"
+
+    if len(groups) != 3:
+        raise ValueError(
+            f"Expected exactly 3 categories from row 1, found {len(groups)}. "
+            f"Headers seen (left-to-right): {groups}"
+        )
+
+    return col_to_category, False
 
 
 def read_and_parse_csv(filepath):
@@ -11,29 +60,39 @@ def read_and_parse_csv(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
         reader = csv.reader(f)
         rows = list(reader)
-    
+
+    if len(rows) < 2:
+        raise ValueError(
+            "CSV must include at least two rows. "
+            "Row 2 (class names) is required."
+        )
+
     # Extract cluster information from first row
     clusters = rows[0]
-    
+
     # Extract class names from second row
     class_names = rows[1]
-    
-    # Extract elements (rows 2 onwards)
+
+    # Extract elements (rows 3 onwards)
     elements_data = rows[2:]
-    
+
     # Parse clusters and their classes
     cluster_structure = {}
-    
-    for col_idx, (cluster, class_name) in enumerate(zip(clusters, class_names)):
-        if not cluster or cluster.strip() == '':
+
+    col_to_category, _legacy_mode = _detect_category_mapping(clusters)
+
+    for col_idx, cluster_key in enumerate(col_to_category):
+        if not cluster_key:
             continue
-        
-        cluster = cluster.strip()
+
+        class_name = None
+        if col_idx < len(class_names):
+            class_name = class_names[col_idx]
         class_name = class_name.strip() if class_name else f"Class_{col_idx}"
-        
-        if cluster not in cluster_structure:
-            cluster_structure[cluster] = {}
-        
+
+        if cluster_key not in cluster_structure:
+            cluster_structure[cluster_key] = {}
+
         # Get elements for this class (non-empty cells in this column)
         elements = []
         for row in elements_data:
@@ -41,9 +100,9 @@ def read_and_parse_csv(filepath):
                 elem = row[col_idx].strip()
                 if elem:
                     elements.append(elem)
-        
-        cluster_structure[cluster][class_name] = elements
-    
+
+        cluster_structure[cluster_key][class_name] = elements
+
     return cluster_structure
 
 
@@ -53,18 +112,14 @@ def generate_combinations(cluster_structure):
     """
     # Extract elements from each cluster - aggregate all clusters with the same key
     cluster_aggregates = {'C1': [], 'C2': [], 'C3': []}
-    
-    for cluster_name in cluster_structure.keys():
-        classes_in_cluster = cluster_structure[cluster_name]
+
+    for cluster_key in cluster_structure.keys():
+        classes_in_cluster = cluster_structure[cluster_key]
         elements = []
-        
+
         for class_name, class_elements in sorted(classes_in_cluster.items()):
             elements.extend(class_elements)
-        
-        # Match cluster names - handle both "C1" and "C1 (cluster 1)" formats
-        cluster_key = cluster_name.strip().split()[0].upper()
-        
-        # Aggregate elements from all clusters with the same key
+
         if cluster_key in cluster_aggregates:
             cluster_aggregates[cluster_key].extend(elements)
     
@@ -81,6 +136,68 @@ def generate_combinations(cluster_structure):
                 combinations.append([c1_elem, c2_elem, c3_elem, f"{c1_elem}-{c2_elem}-{c3_elem}"])
     
     return combinations
+
+
+def _write_temp_csv(content):
+    temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8', newline='')
+    try:
+        temp_file.write(content)
+        return temp_file.name
+    finally:
+        temp_file.close()
+
+
+def run_self_tests():
+    print("\nRunning self-tests...")
+
+    tests = []
+
+    # Legacy C1/C2/C3 style
+    legacy_csv = "\n".join([
+        "C1,C2,C2,C3",
+        "Class 1,Class 2,Class 3,Class 4",
+        "A1,B1,B2,C1",
+        "A2,B3,,C2",
+    ])
+    tests.append(("legacy_c1_c2_c3", legacy_csv, 12))
+
+    # Human-friendly Category 1/2/3 style
+    human_csv = "\n".join([
+        "Category 1,Category 2,Category 2,Category 3",
+        "Class 1,Class 2,Class 3,Class 4",
+        "A1,B1,B2,C1",
+        "A2,B3,,C2",
+    ])
+    tests.append(("human_friendly", human_csv, 12))
+
+    # Distinct headers Product Type / Color / Size
+    distinct_csv = "\n".join([
+        "Product Type,Color,Size",
+        "Type,Color,Size",
+        "A,Red,Small",
+        "B,Blue,Large",
+    ])
+    tests.append(("distinct_headers", distinct_csv, 8))
+
+    passed = 0
+    for name, content, expected_count in tests:
+        path = _write_temp_csv(content)
+        try:
+            cluster_structure = read_and_parse_csv(path)
+            combos = generate_combinations(cluster_structure)
+            if len(combos) != expected_count:
+                raise AssertionError(
+                    f"Expected {expected_count} combinations, got {len(combos)}"
+                )
+            print(f"✓ {name}")
+            passed += 1
+        finally:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+
+    print(f"Self-tests passed: {passed}/{len(tests)}")
 
 
 def save_combinations_csv(combinations, output_filename):
@@ -155,6 +272,10 @@ def main():
     """
     Main function to orchestrate the combination generation
     """
+    if "--self-test" in sys.argv:
+        run_self_tests()
+        return
+
     print("=" * 60)
     print("Multi-Category Combination Generator")
     print("=" * 60)
