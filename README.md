@@ -20,7 +20,7 @@ The result is a complete structured cross-product:
 
 Total Combinations = |C1| × |C2| × |C3|
 
-Manual configuration of multi-category data often leads to missing combinations, inconsistent structures, and downstream workflow errors. This generator ensures complete coverage, structured output, and scalable expansion.
+This ensures complete coverage, structured output, and scalable expansion.
 
 ---
 
@@ -100,9 +100,13 @@ A2, B3, B4, C3,
 5. A category may span multiple columns
 6. All columns belonging to the same category are grouped before generating combinations
 
-For a visual example of how this spreadsheet should look when opened in Excel or LibreOffice, see:
+### Visual Example of Input CSV Structure
 
-**example_input.png**
+Below is an illustrated example of how the CSV should look when opened in Excel or LibreOffice:
+
+![Example CSV Structure](example_data_csv.png)
+
+Make sure the image file `example_data_csv.png` is located in the root directory of the project (same level as this README.md) so GitHub renders it correctly.
 
 ---
 
@@ -136,8 +140,6 @@ A,X,2,A-X-2
 ---
 
 ## Use Cases
-
-This engine supports:
 
 - Product variant generation (size × color × model)  
 - SKU combination expansion  
@@ -198,3 +200,4 @@ MIT License
 ## Author
 
 Developed as part of an automation and structured data workflow portfolio.
+
