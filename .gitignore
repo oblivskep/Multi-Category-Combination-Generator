@@ -33,3 +33,16 @@ Thumbs.db
 # Local environment files
 .env
 .env.*
+
+# Python local tooling files
+.python-version
+.ipynb_checkpoints/
+.tox/
+.nox/
+
+# Runtime logs
+*.log
+
+# Service-specific generated artifacts
+*_combinations.csv
+*_combinations.xlsx
